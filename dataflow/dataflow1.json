@@ -1,0 +1,153 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Sqloutput",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Rsouth",
+						"type": "DatasetReference"
+					},
+					"name": "southsink"
+				},
+				{
+					"dataset": {
+						"referenceName": "Rwest",
+						"type": "DatasetReference"
+					},
+					"name": "westsink"
+				},
+				{
+					"dataset": {
+						"referenceName": "Reast",
+						"type": "DatasetReference"
+					},
+					"name": "eastsink"
+				},
+				{
+					"dataset": {
+						"referenceName": "Rnorth",
+						"type": "DatasetReference"
+					},
+					"name": "northsink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "TotalCost"
+				},
+				{
+					"name": "hi"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as decimal(10,2),",
+				"          TotalCost as decimal(18,0)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 derive(TotalCost = Quantity * UnitPrice) ~> TotalCost",
+				"TotalCost split(Region=='South',",
+				"     Region=='East',",
+				"     Region=='West',",
+				"     disjoint: true) ~> hi@(Rsouth, Reast, Rwest, Rnorth)",
+				"hi@Rsouth sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as double",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> southsink",
+				"hi@Rwest sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as double",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> westsink",
+				"hi@Reast sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as double",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> eastsink",
+				"hi@Rnorth sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          OrderID as integer,",
+				"          OrderDate as date,",
+				"          CustomerID as integer,",
+				"          Region as string,",
+				"          ProductID as integer,",
+				"          Quantity as integer,",
+				"          UnitPrice as double",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> northsink"
+			]
+		}
+	}
+}

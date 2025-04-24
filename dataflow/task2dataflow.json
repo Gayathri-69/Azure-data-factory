@@ -1,0 +1,98 @@
+{
+	"name": "task2dataflow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "mysinkjsondata",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Sinktabletask2final",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "cleaningdata"
+				},
+				{
+					"name": "window1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "AlterRow1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerID as short,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          Region as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
+				"     ignoreNoFilesFound: false,",
+				"     wildcardPaths:['customers_*csv']) ~> source1",
+				"source1 derive(Phone_cleaned = regexReplace(Phone, '[^0-9]', ''),",
+				"          Name_cleaned = coalesce(FirstName, '') + ' ' + coalesce(LastName, '')) ~> cleaningdata",
+				"cleaningdata window(over(Phone_cleaned,",
+				"          Name_cleaned),",
+				"     asc(CustomerID, true),",
+				"     RowNumber = rowNumber()) ~> window1",
+				"window1 filter(RowNumber == 1) ~> filter1",
+				"filter1 keyGenerate(output(MasterID as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 derive(MasterCustomerID = uuid(),",
+				"          DataSource = iif(Region == 'US', 'US', 'EU'),",
+				"          IngestedDate = currentUTC(),",
+				"          RecordStatus = 'Active') ~> derivedColumn1",
+				"derivedColumn1 alterRow(upsertIf(true())) ~> AlterRow1",
+				"AlterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          MasterCustomerID as string,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          Region as string,",
+				"          DataSource as string,",
+				"          IngestedDate as timestamp,",
+				"          RecordStatus as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     keys:['MasterCustomerID'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+			]
+		}
+	}
+}
